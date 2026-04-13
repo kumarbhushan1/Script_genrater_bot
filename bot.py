@@ -4,9 +4,9 @@ import os
 from gemini_api import generate_video_script
 from database import save_script
 
-# बॉट का टोकन लेना
-TOKEN = os.environ.get("TELEGRAM_TOKEN")
-bot = telebot.TeleBot(TOKEN)
+# खाली स्पेस हटाने और थ्रेडिंग बंद करने के लिए
+TOKEN = os.environ.get("TELEGRAM_TOKEN").strip()
+bot = telebot.TeleBot(TOKEN, threaded=False)
 
 # यूज़र के जवाब सेव करने के लिए एक डिक्शनरी
 user_data = {}
