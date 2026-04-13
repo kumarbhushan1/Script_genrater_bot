@@ -2,12 +2,12 @@ import os
 import google.generativeai as genai
 
 def generate_video_script(choices):
-    # API Key को सुरक्षित तरीके से लेना और फालतू स्पेस हटाना
+    # API Key को सुरक्षित तरीके से लेना
     api_key = os.environ.get("GEMINI_API_KEY").strip()
     genai.configure(api_key=api_key)
     
-    # Gemini का नया और तेज़ मॉडल
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # मॉडल का नाम बदलकर सबसे स्टेबल 'gemini-pro' कर दिया गया है
+    model = genai.GenerativeModel('gemini-pro')
     
     # AI के लिए निर्देश (Prompt) तैयार करना
     prompt = f"""
