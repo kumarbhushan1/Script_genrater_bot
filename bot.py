@@ -63,24 +63,32 @@ def handle_query(call):
         # अब हम यूज़र के टेक्स्ट मैसेज का इंतज़ार करेंगे
         bot.register_next_step_handler(call.message, get_topic_and_generate)
 
+import threading
+
 def get_topic_and_generate(message):
     chat_id = message.chat.id
     user_data[chat_id]['topic'] = message.text
     
-    bot.send_message(chat_id, "⏳ कृपया प्रतीक्षा करें, मैं आपकी स्क्रिप्ट लिख रहा हूँ...")
-    bot.send_chat_action(chat_id, 'typing') # "typing..." स्टेटस दिखाना
+    bot.send_message(chat_id, "⏳ कृपया प्रतीक्षा करें, मैं आपकी स्क्रिप्ट लिख रहा हूँ (इसमें 30-40 सेकंड लग सकते हैं)...")
+    bot.send_chat_action(chat_id, 'typing')
     
-    try:
-        # Gemini से स्क्रिप्ट लेना
-        script = generate_video_script(user_data[chat_id])
-        
-        # यूज़र को टेलीग्राम पर भेजना
-        bot.send_message(chat_id, f"✅ आपकी स्क्रिप्ट तैयार है:\n\n{script}")
-        
-        # डेटाबेस में सेव करना
-        user_name = message.from_user.first_name
-        username = message.from_user.username
-        save_script(user_name, chat_id, username, user_data[chat_id], script)
-        
-    except Exception as e:
-        bot.send_message(chat_id, f"माफ़ करें, कोई एरर आ गई: {str(e)}")
+    # यह फंक्शन बैकग्राउंड में काम करेगा ताकि सर्वर क्रैश न हो
+    def process_script_in_background():
+        try:
+            # Gemini से स्क्रिप्ट लेना
+            script = generate_video_script(user_data[chat_id])
+            
+            # यूज़र को टेलीग्राम पर भेजना
+            bot.send_message(chat_id, f"✅ आपकी स्क्रिप्ट तैयार है:\n\n{script}")
+            
+            # डेटाबेस में सेव करना
+            user_name = message.from_user.first_name
+            username = message.from_user.username
+            save_script(user_name, chat_id, username, user_data[chat_id], script)
+            
+        except Exception as e:
+            bot.send_message(chat_id, f"माफ़ करें, कोई एरर आ गई: {str(e)}")
+
+    # बैकग्राउंड थ्रेड (Thread) चालू करना
+    thread = threading.Thread(target=process_script_in_background)
+    thread.start()
