@@ -7,8 +7,8 @@ def generate_video_script(choices):
     # API Key लेना
     api_key = os.environ.get("GEMINI_API_KEY").strip()
     
-    # डायरेक्ट Google का सर्वर लिंक (बिना किसी लाइब्रेरी के)
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    # गूगल का नया लाइव मॉडल (gemini-2.5-flash)
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     
     # AI के लिए निर्देश
     prompt = f"""
