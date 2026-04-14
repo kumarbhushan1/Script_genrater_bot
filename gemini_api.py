@@ -2,16 +2,15 @@ import os
 import json
 import urllib.request
 import urllib.error
-import time
 
 def generate_video_script(choices):
     api_key = os.environ.get("GEMINI_API_KEY").strip()
     
-    # 3 पावरफुल मॉडल्स की सेना (अगर एक फेल हुआ, तो बॉट तुरंत दूसरे पर जाएगा)
+    # हम सारे संभावित मॉडल्स को एक साथ चेक करेंगे
     models = [
+        "gemini-2.5-flash", 
         "gemini-1.5-flash",
-        "gemini-1.5-flash-8b", # Google का नया हल्का मॉडल, जो बहुत तेज़ है और कम बिज़ी रहता है
-        "gemini-1.0-pro"       # पुराना लेकिन बहुत भरोसेमंद मॉडल
+        "gemini-pro"
     ]
     
     prompt = f"""
@@ -23,8 +22,6 @@ def generate_video_script(choices):
     - Target Audience: {choices.get('audience')}
     - Duration: {choices.get('duration')}
     - Topic: {choices.get('topic')}
-    
-    Provide the output clearly with Title, Intro, Body/Scenes, and Outro.
     """
     
     data = {
@@ -32,28 +29,27 @@ def generate_video_script(choices):
     }
     json_data = json.dumps(data).encode('utf-8')
     
-    # बॉट हर मॉडल को बारी-बारी चेक करेगा
+    error_logs = []
+    
     for model in models:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
         req = urllib.request.Request(url, data=json_data, headers={'Content-Type': 'application/json'})
         
-        # हर मॉडल से 2 बार रिक्वेस्ट करेगा
-        for attempt in range(2):
-            try:
-                with urllib.request.urlopen(req) as response:
-                    result_json = json.loads(response.read().decode('utf-8'))
-                    return result_json['candidates'][0]['content']['parts'][0]['text']
-                    
-            except urllib.error.HTTPError as e:
-                # अगर मॉडल बिज़ी है (503) या लिमिट फुल है (429)
-                if e.code in [503, 429]:
-                    time.sleep(2) # 2 सेकंड रुको और उसी मॉडल पर दोबारा ट्राई करो
-                    continue 
-                # अगर कोई और एरर है (जैसे 404), तो तुरंत लूप तोड़ो और अगला नया मॉडल ट्राई करो
-                break 
-            except Exception:
-                time.sleep(2)
-                continue
+        try:
+            with urllib.request.urlopen(req) as response:
+                result_json = json.loads(response.read().decode('utf-8'))
+                return result_json['candidates'][0]['content']['parts'][0]['text']
                 
-    # अगर तीनों मॉडल और उनके सारे प्रयास फेल हो जाएं (जो कि बहुत ही कम होगा)
-    return "⏳ माफ़ करें, अभी बहुत सारे यूज़र्स एक साथ स्क्रिप्ट बना रहे हैं। कृपया 1 मिनट बाद दोबारा प्रयास करें।"
+        except urllib.error.HTTPError as e:
+            try:
+                # गूगल का असली मैसेज निकाल रहे हैं
+                error_message = json.loads(e.read().decode('utf-8')).get('error', {}).get('message', 'Unknown Error')
+            except:
+                error_message = e.read().decode('utf-8')
+            error_logs.append(f"❌ {model}: {e.code} - {error_message}")
+            
+        except Exception as e:
+            error_logs.append(f"❌ {model}: System Error - {str(e)}")
+            
+    # अगर तीनों फेल हों, तो टेलीग्राम पर पूरी रिपोर्ट भेजो
+    return "⏳ असली एरर रिपोर्ट:\n\n" + "\n\n".join(error_logs)
