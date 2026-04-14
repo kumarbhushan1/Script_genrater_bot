@@ -72,22 +72,30 @@ def get_topic_and_generate(message):
     bot.send_message(chat_id, "⏳ कृपया प्रतीक्षा करें, मैं आपकी स्क्रिप्ट लिख रहा हूँ (इसमें 30-40 सेकंड लग सकते हैं)...")
     bot.send_chat_action(chat_id, 'typing')
     
-    # यह फंक्शन बैकग्राउंड में काम करेगा ताकि सर्वर क्रैश न हो
+    # यह फंक्शन बैकग्राउंड में काम करेगा
     def process_script_in_background():
         try:
             # Gemini से स्क्रिप्ट लेना
             script = generate_video_script(user_data[chat_id])
             
-            # यूज़र को टेलीग्राम पर भेजना
-            bot.send_message(chat_id, f"✅ आपकी स्क्रिप्ट तैयार है:\n\n{script}")
-            
-            # डेटाबेस में सेव करना
-            user_name = message.from_user.first_name
-            username = message.from_user.username
-            save_script(user_name, chat_id, username, user_data[chat_id], script)
-            
+            # अगर स्क्रिप्ट में एरर मैसेज (❌ या ⏳) है, तो सिर्फ एरर दिखाओ
+            if script.startswith("❌") or script.startswith("⏳"):
+                bot.send_message(chat_id, script)
+            else:
+                bot.send_message(chat_id, "✅ आपकी शानदार स्क्रिप्ट तैयार है:\n\n")
+                
+                # लंबी स्क्रिप्ट को 4000 अक्षरों के टुकड़ों में बाँटकर भेजना
+                max_length = 4000
+                for i in range(0, len(script), max_length):
+                    bot.send_message(chat_id, script[i:i+max_length])
+                
+                # डेटाबेस में सेव करना
+                user_name = message.from_user.first_name
+                username = message.from_user.username
+                save_script(user_name, chat_id, username, user_data[chat_id], script)
+                
         except Exception as e:
-            bot.send_message(chat_id, f"माफ़ करें, कोई एरर आ गई: {str(e)}")
+            bot.send_message(chat_id, "❌ माफ़ करें, कोई तकनीकी एरर आ गई है। कृपया /start दबाकर दोबारा कोशिश करें।")
 
     # बैकग्राउंड थ्रेड (Thread) चालू करना
     thread = threading.Thread(target=process_script_in_background)
