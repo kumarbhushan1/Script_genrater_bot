@@ -7,7 +7,6 @@ import time
 def generate_video_script(choices):
     api_key = os.environ.get("GEMINI_API_KEY").strip()
     
-    # अब हम सिर्फ उसी 1 मॉडल का इस्तेमाल करेंगे जो ज़िंदा है (gemini-2.5-flash)
     model = "gemini-2.5-flash"
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
     
@@ -30,9 +29,8 @@ def generate_video_script(choices):
     json_data = json.dumps(data).encode('utf-8')
     req = urllib.request.Request(url, data=json_data, headers={'Content-Type': 'application/json'})
     
-    # ज़िद्दी बॉट की सेटिंग (बॉट 5 बार खुद कोशिश करेगा और हर बार ज़्यादा इंतज़ार करेगा)
     max_retries = 5 
-    wait_times = [3, 5, 8, 12, 15] # पहले 3 सेकंड रुकेगा, फिर 5, फिर 8...
+    wait_times = [3, 5, 8, 12, 15] 
     
     for attempt in range(max_retries):
         try:
@@ -41,16 +39,15 @@ def generate_video_script(choices):
                 return result_json['candidates'][0]['content']['parts'][0]['text']
                 
         except urllib.error.HTTPError as e:
-            # अगर सर्वर बिज़ी (503) है, तो वहीं रुक कर दोबारा ट्राई करो
-            if e.code == 503 and attempt < max_retries - 1:
+            # फिक्स: अब 503 (सर्वर बिजी) और 429 (लिमिट क्रॉस) दोनों में बॉट इंतज़ार करेगा
+            if e.code in [503, 429] and attempt < max_retries - 1:
                 time.sleep(wait_times[attempt]) 
                 continue
             
-            # अगर 45 सेकंड ज़िद्द करने के बाद भी गूगल ना माने
-            if e.code == 503:
-                return "⏳ माफ़ करें, अभी बहुत सारे लोग स्क्रिप्ट बना रहे हैं। कृपया कुछ मिनट बाद दोबारा प्रयास करें।"
+            # अगर 45 सेकंड के बाद भी गूगल ना माने
+            if e.code in [503, 429]:
+                return "⏳ माफ़ करें, अभी Google के सर्वर पर बहुत ट्रैफ़िक है या फ्री लिमिट पूरी हो गई है। कृपया 1 मिनट रुककर दोबारा प्रयास करें।"
             
-            # अगर कोई और एरर आ जाए
             return f"❌ API Error: {e.code}"
             
         except Exception as e:
