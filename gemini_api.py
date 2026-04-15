@@ -11,7 +11,7 @@ def generate_video_script(choices):
     if not api_key:
         return "❌ सर्वर एरर: Render पर GROQ_API_KEY सेट नहीं है।"
         
-    api_key = api_key.strip() # किसी भी फालतू स्पेस को हटाना
+    api_key = api_key.strip() 
     
     url = "https://api.groq.com/openai/v1/chat/completions"
     
@@ -29,7 +29,8 @@ def generate_video_script(choices):
     """
     
     data = {
-        "model": "llama3-70b-8192", 
+        # यहाँ पुराने की जगह नया और एक्टिव मॉडल लगा दिया गया है
+        "model": "llama-3.3-70b-versatile", 
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.7
     }
@@ -38,8 +39,6 @@ def generate_video_script(choices):
     req = urllib.request.Request(url, data=json_data)
     req.add_header('Content-Type', 'application/json')
     req.add_header('Authorization', f'Bearer {api_key}')
-    
-    # 🚨 सबसे बड़ा फिक्स: सिक्योरिटी गार्ड को चकमा देने के लिए User-Agent!
     req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
     
     max_retries = 3 
